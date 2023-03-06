@@ -1,0 +1,55 @@
+### LAMMPS code fof GSF
+### Daramola Ayobami
+### file_name gsf.in
+units metal
+boundary p p s
+atom_style atomic
+variable lattice equal 3.534
+variable partial equal "v_lattice/sqrt(6)"
+variable cna equal "v_lattice*(1+1/sqrt(2))/2"
+lattice fcc ${lattice} orient x 1 1 -2 orient y 1 1 1 orient z 1 -1 0
+region box block 0 21 0 20 0 20
+create_box 1 box
+create_atoms 1 box
+region up1 block INF INF 62 INF INF INF units box
+group up1 region up1
+region up2 block INF INF 64 INF INF INF units box
+group up2 region up2
+region energy block INF INF 45 80 INF INF units box
+group energy region energy
+neighbor 2.0 bin
+neigh_modify delay 1 check yes
+mass           *   55.84500000
+pair_style	eam/alloy
+pair_coeff * *  xx.eam.alloy {element}
+compute pe all pe/atom
+compute cna all cna/atom ${cna}
+compute gbenergy energy reduce sum c_pe
+variable gbenergy equal c_gbenergy
+thermo 1
+thermo_style custom step temp pe ke etotal lx ly lz pxx pyy pzz c_gbenergy
+#dump 1 all custom 1 cell.cfg id type xs ys zs c_cna c_pe
+#dump_modify 1 element Ni
+#dump 2 energy custom 1 gsf.cfg id type xs ys zs c_cna c_pe
+#dump_modify 2 element Ni
+run 0
+variable gbenergy00 equal "v_gbenergy"
+variable gbenergy0 equal ${gbenergy00}
+label forloopp
+variable a loop 20
+variable p equal "v_partial/20"
+displace_atoms up1 move ${p} 0 0 units box
+variable gsf equal "(v_gbenergy-v_gbenergy0)/lx/lz*16.02*1000"
+fix extra all print 1 "$a ${gsf}" append data.gsf-Cu-0 screen no title a
+run 1
+next a
+jump gsf.in forloopp
+label forloopt
+variable a loop 21 40
+variable p equal "v_partial/20"
+displace_atoms up2 move ${p} 0 0 units box
+variable gsf equal "(v_gbenergy-v_gbenergy0)/lx/lz*16.02*1000"
+fix extra all print 1 "$a ${gsf}" append data.gsf-Cu-0 screen no title a
+run 1
+next a
+jump gsf.in forloopt
